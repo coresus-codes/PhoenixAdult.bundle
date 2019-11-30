@@ -17,17 +17,17 @@ def search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor
                 score = 100 - Util.LevenshteinDistance(searchTitle.lower(), titleNoFormatting.lower())
             results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " [" + PAsearchSites.getSearchSiteName(siteNum) + "] " + releaseDate, score = score, lang = lang))
     else: # Special parsing for TushyRaw exact match until they get a search function put in
-        encodedTitle = searchTitle.lower().strip().replace(' ','-')
-        searchResults = HTML.ElementFromURL(PAsearchSites.getSearchBaseURL(siteNum) + '/' + encodedTitle)
-        titleNoFormatting = searchResults.xpath('//h1[@data-test-component="VideoTitle"]')[0].text_content()
-        curID = ("/"+encodedTitle).replace('/','_').replace('?','!')
-        bigScript = searchResults.xpath('//footer/following::script[1]')[0].text_content()
-        alpha = bigScript.find('"releaseDate":"')+15
-        omega = bigScript.find('"',alpha)
-        date = bigScript[alpha:omega]
-        releaseDate = parse(date).strftime('%Y-%m-%d')
-        score = 100
-        results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " [" + PAsearchSites.getSearchSiteName(siteNum) + "] " + releaseDate, score = score, lang = lang))
+        searchResults = HTML.ElementFromURL(PAsearchSites.getSearchSearchURL(siteNum) + encodedTitle)
+        for searchResult in searchResults.xpath('//div[@class="pb6v16-1 fNpwyc"]'):
+            titleNoFormatting = searchResult.xpath('.//img')[0].get('alt')
+            scenePage = searchResult.xpath('.//a')[0].get('href')
+            curID = scenePage.replace('/','_').replace('?','!')
+            releaseDate = parse(searchResult.xpath('.//div[@class="sc-10d9zl9-5 gfkBpA"]')[0].text_content().strip()).strftime('%Y-%m-%d')
+            if searchDate and releaseDate:
+                score = 100 - Util.LevenshteinDistance(searchDate, releaseDate)
+            else:
+                score = 100 - Util.LevenshteinDistance(searchTitle.lower(), titleNoFormatting.lower())
+            results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " [" + PAsearchSites.getSearchSiteName(siteNum) + "] " + releaseDate, score = score, lang = lang))
     return results
 
 def update(metadata,siteID,movieGenres,movieActors):
